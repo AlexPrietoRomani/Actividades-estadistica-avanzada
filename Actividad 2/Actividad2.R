@@ -1,19 +1,28 @@
-# ---------------------------------
-# Instalación de paquetes necesarios
-# ---------------------------------
+# ------------------------------------------------------------
+# Instalación y carga de librerías necesarias
+# ------------------------------------------------------------
 
-# Instalar paquetes si no están ya instalados
-required_packages <- c("ggplot2", "forecast", "tseries", "readr", "dplyr")
-new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+# Lista de paquetes requeridos
+required_packages <- c("ggplot2", "forecast", "tseries", "readr", "dplyr", "uroot", "FinTS", "uroot", "astsa")
 
-if(length(new_packages)) install.packages(new_packages)
+# Función para instalar paquetes que no estén ya instalados
+install_if_missing <- function(packages) {
+  new_packages <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new_packages)) install.packages(new_packages)
+}
 
-# Cargar las librerías necesarias
+# Instalar paquetes faltantes
+install_if_missing(required_packages)
+
+# Cargar las librerías
 library(ggplot2)
 library(forecast)
 library(tseries)
-library(readr)     # Para leer datos de manera más eficiente
-library(dplyr)     # Para manipulación de datos
+library(readr)
+library(dplyr)
+library(uroot)
+library(FinTS)
+library(astsa)
 
 # ---------------------------------
 # Carga de datos
@@ -136,34 +145,22 @@ ts_temp <- ts(data$Temp_Promedio, start = c(min(data$Año), min(data$Mes)), freq
 plot(ts_temp, main = "Serie Temporal de la Temperatura Promedio Diaria",
      ylab = "Temperatura (°C)", xlab = "Año", col = "darkgreen")
 
-# ---------------------------------
-# Descomposición de la serie temporal
-# ---------------------------------
+# ------------------------------------------------------------
+# Prueba de estacionariedad
+# ------------------------------------------------------------
 
-# Descomposición usando STL (Seasonal and Trend decomposition using Loess)
-ts_decomp <- stl(ts_temp, s.window = "periodic")
-
-# Visualización de la descomposición
-plot(ts_decomp, main = "Descomposición STL de la Serie Temporal")
-
-# ---------------------------------
-# Análisis de autocorrelación
-# ---------------------------------
-
-# Gráfico de ACF
-acf(ts_temp, main = "Función de Autocorrelación (ACF)")
-
-# Gráfico de PACF
-pacf(ts_temp, main = "Función de Autocorrelación Parcial (PACF)")
-
-# ---------------------------------
-# Prueba de estacionariedad (Dickey-Fuller Aumentada)
-# ---------------------------------
-
+# Prueba de Dickey-Fuller Aumentada (ADF)
 adf_test <- adf.test(ts_temp, alternative = "stationary")
 
-# Mostrar los resultados de la prueba
+# Mostrar los resultados de la prueba ADF
 print(adf_test)
+
+# Interpretación
+if(adf_test$p.value < 0.05) {
+  cat("El p-valor es", adf_test$p.value, "< 0.05. Rechazamos la hipótesis nula. La serie es estacionaria.\n")
+} else {
+  cat("El p-valor es", adf_test$p.value, ">= 0.05. No podemos rechazar la hipótesis nula. La serie no es estacionaria.\n")
+}
 
 # ---------------------------------
 # Transformación de la serie (diferenciación) si es necesario
@@ -184,68 +181,129 @@ if(adf_test$p.value > 0.05) {
 }
 
 # ---------------------------------
-# Selección y ajuste del modelo ARIMA
+# Descomposición de la serie temporal
 # ---------------------------------
 
-# Uso de auto.arima para seleccionar el mejor modelo ARIMA
-model_arima <- auto.arima(ts_modeling, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
+# Descomposición usando STL (Seasonal and Trend decomposition using Loess)
+ts_decomp <- stl(ts_modeling, s.window = "periodic")
+
+# Visualización de la descomposición
+plot(ts_decomp, main = "Descomposición STL de la Serie Temporal")
+
+# ---------------------------------
+# Análisis de autocorrelación
+# ---------------------------------
+
+# Gráfico de ACF
+acf(ts_modeling, main = "Función de Autocorrelación (ACF)")
+
+# Gráfico de PACF
+pacf(ts_modeling, main = "Función de Autocorrelación Parcial (PACF)")
+
+# ------------------------------------------------------------
+# Análisis de estacionalidad
+# ------------------------------------------------------------
+
+# Análisis espectral para identificar frecuencias dominantes
+spectrum(ts_modeling, main = "Análisis Espectral de la Serie Temporal")
+
+# Prueba de estacionalidad OCSB
+ocsb_test <- ocsb.test(ts_modeling)
+print(ocsb_test)
+
+# ------------------------------------------------------------
+# Gráficos ACF y PACF en rezagos estacionales
+# ------------------------------------------------------------
+
+# Definir el máximo de rezagos como un múltiplo del período estacional
+lag_max <- 365  # Un año para datos diarios
+
+# Gráfico de ACF en rezagos estacionales
+acf(ts_modeling, lag.max = lag_max, main = "ACF de la Serie Temporal")
+
+# Gráfico de PACF en rezagos estacionales
+pacf(ts_modeling, lag.max = lag_max, main = "PACF de la Serie Temporal")
+
+# ------------------------------------------------------------
+# Ajuste del modelo SARIMA
+# ------------------------------------------------------------
+
+# Uso de auto.arima para seleccionar el mejor modelo SARIMA
+model_sarima <- auto.arima(ts_modeling, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
 
 # Resumen del modelo ajustado
-summary(model_arima)
+summary(model_sarima)
 
-# ---------------------------------
-# Diagnóstico del modelo
-# ---------------------------------
+# ------------------------------------------------------------
+# Diagnóstico del modelo SARIMA
+# ------------------------------------------------------------
 
 # Verificación de los residuos
-checkresiduals(model_arima)
+checkresiduals(model_sarima)
 
-# Prueba de Ljung-Box
-ljung_box <- Box.test(residuals(model_arima), lag = 20, type = "Ljung-Box")
+# Prueba de Ljung-Box en residuos estacionales
+lag_max_resid <- 20  # Número de rezagos para la prueba
+ljung_box <- Box.test(residuals(model_sarima), lag = lag_max_resid, type = "Ljung-Box", fitdf = length(model_sarima$coef))
 print(ljung_box)
 
+# Gráfico de ACF en rezagos estacionales
+acf(residuals(model_sarima), main = "ACF de la Serie Temporal")
+
+# Gráfico de PACF en rezagos estacionales
+pacf(residuals(model_sarima), main = "PACF de la Serie Temporal")
+
+# Prueba de heterocedasticidad (ARCH test)
+arch_test <- ArchTest(residuals(model_sarima))
+print(arch_test)
+
 # Prueba de normalidad de Shapiro-Wilk
-shapiro_test <- shapiro.test(residuals(model_arima))
+shapiro_test <- shapiro.test(residuals(model_sarima))
 print(shapiro_test)
 
-# ---------------------------------
-# Validación del modelo
-# ---------------------------------
+# QQ-Plot de los residuos
+qqnorm(residuals(model_sarima))
+qqline(residuals(model_sarima), col = "red")
 
-# División de datos en entrenamiento y prueba
-train_size <- floor(0.8 * length(ts_modeling))
-train_data <- ts_modeling[1:train_size]
-test_data <- ts_modeling[(train_size + 1):length(ts_modeling)]
+# ------------------------------------------------------------
+# Validación del modelo
+# ------------------------------------------------------------
+
+# División de datos en entrenamiento y prueba (80% entrenamiento, 20% prueba)
+train_size <- floor(0.8 * length(ts_temp))
+train_data <- window(ts_temp, end = c(time(ts_temp)[train_size]))
+test_data <- window(ts_temp, start = c(time(ts_temp)[train_size + 1]))
 
 # Ajustar el modelo con datos de entrenamiento
-model_arima_train <- auto.arima(train_data, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
+model_sarima_train <- auto.arima(train_data, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
+
+# Resumen del modelo ajustado en entrenamiento
+summary(model_sarima_train)
 
 # Realizar predicciones
 forecast_horizon <- length(test_data)
-forecast_arima <- forecast(model_arima_train, h = forecast_horizon)
+forecast_sarima <- forecast(model_sarima_train, h = forecast_horizon)
 
 # Comparar predicciones con datos reales
-accuracy_measures <- accuracy(forecast_arima, test_data)
+accuracy_measures <- accuracy(forecast_sarima, test_data)
 print(accuracy_measures)
 
 # Gráfico de predicciones vs datos reales
-autoplot(forecast_arima) +
+autoplot(forecast_sarima) +
   autolayer(test_data, series = "Datos Reales") +
   labs(title = "Predicciones vs Datos Reales",
        x = "Tiempo",
        y = "Temperatura Promedio (°C)") +
   theme_minimal()
 
-
-# ---------------------------------
+# ------------------------------------------------------------
 # Predicción futura
-# ---------------------------------
+# ------------------------------------------------------------
 
 # Reajustar el modelo con todos los datos disponibles
-final_model_arima <- auto.arima(ts_modeling, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
+final_model_sarima <- auto.arima(ts_temp, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
 
 # Realizar predicciones futuras (por ejemplo, para los próximos 365 días)
-forecast_future <- forecast(final_model_arima, h = 365)
+forecast_future <- forecast(final_model_sarima, h = 365)
 
 # Visualización de las predicciones
 autoplot(forecast_future) +
@@ -254,14 +312,15 @@ autoplot(forecast_future) +
        y = "Temperatura Promedio (°C)") +
   theme_minimal()
 
-# ---------------------------------
+# ------------------------------------------------------------
 # Guardado de resultados y modelos
-# ---------------------------------
+# ------------------------------------------------------------
 
 # Guardar el modelo ajustado
-saveRDS(final_model_arima, file = "modelo_arima_cayalti.rds")
+saveRDS(final_model_sarima, file = "modelo_sarima_cayalti.rds")
 
 # Exportar las predicciones a un archivo CSV
 predicciones <- data.frame(Fecha = seq.Date(from = max(data$Fecha) + 1, by = "day", length.out = 365),
-                           Prediccion = forecast_future$mean)
+                           Prediccion = as.numeric(forecast_future$mean))
 write.csv(predicciones, file = "predicciones_temperatura.csv", row.names = FALSE)
+
