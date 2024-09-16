@@ -86,3 +86,78 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 ## Contact
 For any questions or feedback, please contact Alex Anthony Prieto Romani at alexprieto1997@gmial.com.
+
+# Versión Español
+
+Este repositorio contiene dos actividades principales como parte de un curso de estadística avanzada en un programa de máster. Se centra en la realización de análisis exhaustivos de series temporales y regresión utilizando R.
+
+## Actividades 
+
+### Actividad 1: Análisis de Regresión
+La primera actividad consiste en realizar un análisis de regresión detallado. Esto incluye la preparación de los datos, el ajuste del modelo, y la interpretación de los resultados para abordar preguntas específicas de investigación o hipótesis relacionadas con el conjunto de datos.
+
+#### Pasos clave:
+- Carga y limpieza de los datos:** Se carga y limpia el conjunto de datos, se tratan los valores que faltan y se da el formato adecuado a las columnas.
+- Análisis exploratorio de datos (AED):** Se generan resúmenes visuales y estadísticos de los datos para comprender los patrones subyacentes.
+- Ajuste de modelos:** Se ajustan varios modelos de regresión a los datos y se comparan sus resultados utilizando las métricas adecuadas.
+- Interpretación:** Los resultados se interpretan para obtener información significativa sobre las relaciones entre las variables.
+
+### Actividad 2: Análisis de series temporales
+Esta actividad consiste en el análisis de datos diarios de temperatura a lo largo de un periodo utilizando métodos de series temporales. El objetivo es describir los datos estadísticamente, descomponerlos en componentes, modelizarlos adecuadamente y hacer previsiones.
+
+#### Pasos clave:
+1. **Descripción de los datos**
+   - El conjunto de datos contiene registros diarios de temperaturas máximas y mínimas a partir de 1935.
+   - Los valores perdidos indicados por -99,9 se trataron sustituyéndolos por NA y eliminando los casos incompletos.
+   - Las temperaturas medias diarias se calcularon como la media de las temperaturas máximas y mínimas.
+
+2. **Análisis estadístico**
+   - Se calcularon las estadísticas resumidas, incluyendo la media, la mediana, la desviación estándar, la varianza y los valores mínimo y máximo.
+   - Los resultados clave incluyen una temperatura media diaria de aproximadamente 22,75°C con una desviación estándar de 3,22°C.
+
+3. **Visualización de datos**
+   - Un histograma de las temperaturas medias diarias muestra una distribución casi normal centrada en torno a los 22°C.
+   - Un diagrama de caja revela la presencia de algunos valores atípicos, sobre todo en el lado inferior, que indican descensos ocasionales de la temperatura.
+
+4. **Creación de series temporales**
+   - Se ha creado un objeto de serie temporal utilizando las temperaturas medias diarias con una frecuencia fijada en 365,25, teniendo en cuenta los años bisiestos.
+   
+5. **Pruebas de estacionariedad**
+   - La prueba de Dickey-Fuller aumentado (ADF) indica que la serie es estacionaria con un valor p de 0,01, lo que nos permite rechazar la hipótesis nula de no estacionariedad.
+
+6. **Descomposición de la serie temporal:**
+   - La serie se descompuso en componentes de tendencia, estacionales y remanentes utilizando STL (Seasonal and Trend decomposition using Loess).
+     - **Tendencia:** Captura los movimientos a largo plazo de los datos, posiblemente vinculados a cambios climáticos.
+     - Estacional:** Muestra los ciclos anuales, reflejando las variaciones estacionales de temperatura esperadas.
+     - **Remanente:** Representa las fluctuaciones residuales tras eliminar los componentes de tendencia y estacionales.
+
+7. **Análisis de autocorrelación**
+   - Los gráficos ACF y PACF mostraron correlaciones significativas hasta varios retardos, lo que indica posibles patrones estacionales.
+   - Esta información guió la selección de un modelo ARIMA apropiado.
+
+8. **Análisis espectral**
+   - La estimación de la densidad espectral confirmó las frecuencias estacionales dominantes, validando los resultados visuales de la descomposición.
+
+9. **Ajuste del modelo**
+   - Se ajustó un modelo ARIMA, teniendo en cuenta los componentes autorregresivos y de media móvil identificados.
+   - Las comprobaciones diagnósticas, incluidas la ACF residual y la PACF, confirmaron la adecuación del modelo, aunque fueron necesarios pequeños ajustes para un rendimiento óptimo.
+
+10. **Diagnóstico del modelo**
+    - La prueba de Ljung-Box sobre los residuos indicó que no quedaba ninguna autocorrelación significativa, lo que indica un buen ajuste del modelo.
+    - Las pruebas de normalidad y los gráficos Q-Q de los residuos confirmaron que éstos siguen aproximadamente una distribución normal.
+
+## Instalación y configuración
+Para ejecutar los análisis usted mismo, clone este repositorio y asegúrese de tener instalado R con los siguientes paquetes:
+- `ggplot2`
+- previsión
+- `tseries
+- `dplyr`
+- `readr`
+
+Instale los paquetes necesarios utilizando:
+```R
+install.packages(c(«ggplot2», «forecast», «tseries», «readr», «dplyr»))
+```
+
+## Uso
+Los scripts detallados y los datos se pueden encontrar en las carpetas respectivas de la Actividad 1 y la Actividad 2. Cada script está bien comentado y organizado para guiarle a través del proceso desde la carga de datos hasta el análisis final y la visualización.
