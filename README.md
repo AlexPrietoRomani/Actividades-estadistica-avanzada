@@ -149,8 +149,8 @@ Esta actividad consiste en el análisis de datos diarios de temperatura a lo lar
 ## Instalación y configuración
 Para ejecutar los análisis usted mismo, clone este repositorio y asegúrese de tener instalado R con los siguientes paquetes:
 - `ggplot2`
-- previsión
-- `tseries
+- `previsión`
+- `tseries`
 - `dplyr`
 - `readr`
 
