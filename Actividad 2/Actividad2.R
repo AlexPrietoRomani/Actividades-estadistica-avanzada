@@ -225,44 +225,51 @@ acf(ts_modeling, lag.max = lag_max, main = "ACF de la Serie Temporal")
 pacf(ts_modeling, lag.max = lag_max, main = "PACF de la Serie Temporal")
 
 # ------------------------------------------------------------
-# Ajuste del modelo SARIMA
+# Ajuste del modelo ARIMA
 # ------------------------------------------------------------
 
 # Uso de auto.arima para seleccionar el mejor modelo SARIMA
-model_sarima <- auto.arima(ts_modeling, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
+model_arima <- auto.arima(ts_modeling, , max.d = 10, max.p = 10, max.q = 10, 
+  max.D = 10, max.P = 10, max.Q = 10, lambda = "auto", 
+  allowmean = F, allowdrift = T, test = c("adf"))
+
+# Ajustar el modelo ARIMA(5,0,1)(0,1,0)[365]
+model_arima <- Arima(ts_modeling,
+  order = c(5, 0, 1),          # Órdenes no estacionales (p, d, q)
+  seasonal = list(order = c(0, 1, 0), period = 365))  # Órdenes estacionales (P, D, Q) y período
 
 # Resumen del modelo ajustado
-summary(model_sarima)
+summary(model_arima)
 
 # ------------------------------------------------------------
-# Diagnóstico del modelo SARIMA
+# Diagnóstico del modelo ARIMA
 # ------------------------------------------------------------
 
 # Verificación de los residuos
-checkresiduals(model_sarima)
+checkresiduals(model_arima)
 
 # Prueba de Ljung-Box en residuos estacionales
 lag_max_resid <- 20  # Número de rezagos para la prueba
-ljung_box <- Box.test(residuals(model_sarima), lag = lag_max_resid, type = "Ljung-Box", fitdf = length(model_sarima$coef))
+ljung_box <- Box.test(residuals(model_arima), lag = lag_max_resid, type = "Ljung-Box", fitdf = length(model_arima$coef))
 print(ljung_box)
 
 # Gráfico de ACF en rezagos estacionales
-acf(residuals(model_sarima), main = "ACF de la Serie Temporal")
+acf(residuals(model_arima), main = "ACF de la Serie Temporal")
 
 # Gráfico de PACF en rezagos estacionales
-pacf(residuals(model_sarima), main = "PACF de la Serie Temporal")
+pacf(residuals(model_arima), main = "PACF de la Serie Temporal")
 
 # Prueba de heterocedasticidad (ARCH test)
-arch_test <- ArchTest(residuals(model_sarima))
+arch_test <- ArchTest(residuals(model_arima))
 print(arch_test)
 
 # Prueba de normalidad de Shapiro-Wilk
-shapiro_test <- shapiro.test(residuals(model_sarima))
+shapiro_test <- shapiro.test(residuals(model_arima))
 print(shapiro_test)
 
 # QQ-Plot de los residuos
-qqnorm(residuals(model_sarima))
-qqline(residuals(model_sarima), col = "red")
+qqnorm(residuals(model_arima))
+qqline(residuals(model_arima), col = "red")
 
 # ------------------------------------------------------------
 # Validación del modelo
@@ -300,10 +307,10 @@ autoplot(forecast_sarima) +
 # ------------------------------------------------------------
 
 # Reajustar el modelo con todos los datos disponibles
-final_model_sarima <- auto.arima(ts_temp, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
+final_model_arima <- auto.arima(ts_temp, seasonal = TRUE, stepwise = FALSE, approximation = FALSE)
 
 # Realizar predicciones futuras (por ejemplo, para los próximos 365 días)
-forecast_future <- forecast(final_model_sarima, h = 365)
+forecast_future <- forecast(model_arima, h = 365)
 
 # Visualización de las predicciones
 autoplot(forecast_future) +
